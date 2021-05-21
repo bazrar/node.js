@@ -14,6 +14,18 @@ exports.checkId = (req, res, next, val) => {
   }
   next();
 };
+
+exports.validateBody = (req, res, next) => {
+  console.log(req.body);
+  const { name, price } = req.body;
+  if (name && price) {
+    return next();
+  }
+  res.status(400).json({
+    status: 'fail',
+    message: 'missing params',
+  });
+};
 exports.getAllTours = (req, res) => {
   console.log(req.requestTime);
   res.status(200).json({
