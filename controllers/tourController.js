@@ -29,17 +29,39 @@ exports.createTour = async (req, res) => {
 };
 
 exports.getAllTours = async (req, res) => {
+  let queryObj = { ...req.query };
+  //1. building query
+  //filtering
+  const excludedFields = ['sort', 'page', 'limit', 'fields'];
+  excludedFields.forEach((el) => delete queryObj[el]);
+
+  let queryString = JSON.stringify(queryObj);
+  queryString = queryString.replace(
+    /\b(gt|gte|lt|lte)\b/g,
+    (match) => `$${match}`
+  );
+
+  // console.log(JSON.parse(queryString));
+  const query = Tour.find(JSON.parse(queryString));
+
+  // Sorting
+  if (req.query.sort) {
+    const sortBy = req.query.sort.split(',').join(' ');
+    query.sort(sortBy);
+  } else {
+    query.sort('-createdAt');
+  }
+  const tour = await query;
+  res.status(200).json({
+    statusCode: 'success',
+    length: tour.length,
+    tour,
+  });
   try {
-    const tours = await Tour.find();
-    res.status(200).json({
-      statusCode: 'success',
-      length: tours.length,
-      tours,
-    });
   } catch (err) {
     res.status(404).json({
       statusCode: 'fail',
-      message: err,
+      msg: err,
     });
   }
 };
