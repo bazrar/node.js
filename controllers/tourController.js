@@ -1,5 +1,12 @@
 const Tour = require('../models/tourModel');
 
+exports.aliasTopTours = (req, res, next) => {
+  req.query.limit = 5;
+  req.query.sort = '-ratingsAverage, price';
+  req.query.fields = 'name,price,ratingsAverage,summary,difficulty';
+  next();
+};
+
 exports.createTour = async (req, res) => {
   const { name, rating, price } = req.body;
   console.log(name, rating, price);
@@ -29,46 +36,58 @@ exports.createTour = async (req, res) => {
 };
 
 exports.getAllTours = async (req, res) => {
-  let queryObj = { ...req.query };
-  //          #############BUILDING QUERY###################
-  // 1. FILTERING
-  const excludedFields = ['sort', 'page', 'limit', 'fields'];
-  excludedFields.forEach((el) => delete queryObj[el]);
-
-  let queryString = JSON.stringify(queryObj);
-  queryString = queryString.replace(
-    /\b(gt|gte|lt|lte)\b/g,
-    (match) => `$${match}`
-  );
-
-  // console.log(JSON.parse(queryString));
-  const query = Tour.find(JSON.parse(queryString));
-
-  // 2. SORTING
-  if (req.query.sort) {
-    const sortBy = req.query.sort.split(',').join(' ');
-    query.sort(sortBy);
-  } else {
-    query.sort('-createdAt');
-  }
-
-  // 3. FIELDS LIMITING
-  if (req.query.fields) {
-    let fields = req.query.fields.split(',').join(' ');
-    // console.log(fields);
-    query.select(fields);
-  } else {
-    query.select('-__v');
-  }
-
-  const tour = await query;
-  res.status(200).json({
-    statusCode: 'success',
-    length: tour.length,
-    tour,
-  });
   try {
+    let queryObj = { ...req.query };
+    //          #############BUILDING QUERY###################
+    // 1. FILTERING
+    const excludedFields = ['sort', 'page', 'limit', 'fields'];
+    excludedFields.forEach((el) => delete queryObj[el]);
+
+    let queryString = JSON.stringify(queryObj);
+    queryString = queryString.replace(
+      /\b(gt|gte|lt|lte)\b/g,
+      (match) => `$${match}`
+    );
+
+    // console.log(JSON.parse(queryString));
+    let query = Tour.find(JSON.parse(queryString));
+
+    // 2. SORTING
+    if (req.query.sort) {
+      const sortBy = req.query.sort.split(',').join(' ');
+      query = query.sort(sortBy);
+    } else {
+      query = query.sort('-createdAt');
+    }
+
+    // 3. FIELDS LIMITING
+    if (req.query.fields) {
+      let fields = req.query.fields.split(',').join(' ');
+      // console.log(fields);
+      queyr = query.select(fields);
+    } else {
+      query = query.select('-__v');
+    }
+
+    //4. PAGINATION
+    const { page, limit } = req.query;
+    let skip = (page - 1) * limit;
+
+    if (req.query.page) {
+      const numTours = await Tour.countDocuments();
+      // console.log(numTours);
+      if (skip > numTours) throw new Error('This page does not exist');
+    }
+    query = query.skip(skip).limit(limit * 1);
+
+    const tour = await query;
+    res.status(200).json({
+      statusCode: 'success',
+      length: tour.length,
+      tour,
+    });
   } catch (err) {
+    // console.log(err);
     res.status(404).json({
       statusCode: 'fail',
       msg: err,
