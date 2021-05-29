@@ -1,3 +1,4 @@
+const { response } = require('express');
 const Tour = require('../models/tourModel');
 
 exports.aliasTopTours = (req, res, next) => {
@@ -8,56 +9,57 @@ exports.aliasTopTours = (req, res, next) => {
 };
 
 class APIFeatures {
-  consturctor(query, queryObj) {
-    this.query = query;
-    this.queryObj = queryObj;
+  constructor(query, queryString) {
+
+    this.query = query
+    this.queryString = queryString
   }
 
   filter() {
-    let queryObj = { ...this.queryObj };
-    const exclude = ['sort', 'limit', 'fields', 'page'];
-    exclude.forEach((el) => delete queryObj[el]);
-
-    let queryString = JSON.stringify(queryObj).replace(
-      /\b(gt|gte|lt|lte)\b/g,
-      (match) => `$${match}`
-    );
-    console.log(queryString);
-    this.query = this.query.find(JSON.parse(JSON.parse(queryString)));
+    // console.log('filter method')
+    const queryObj = {...this.queryString}
+    const excludeFields = ['sort', 'page', 'fields', 'limit']
+    excludeFields.forEach(el => delete queryObj[el])
+    const queryStr = JSON.stringify(queryObj).replace(/\b(gt|gte|lt|lte)\b/g, match => `$${match}`)
+    // console.log(queryStr)
+    this.query = this.query.find(JSON.parse(queryStr))
+    // console.log(this.query)
     return this;
   }
 
   sort() {
-    if (this.queryObj.sort) {
-      const sortedBy = JSON.stringify(sortedBy).split(',').join(' ');
-      this.query = this.query.sort(sortedBy);
-    } else {
-      this.query = this.query.sort('createdAt');
+    if(this.queryString.sort) {
+      this.query = this.query.sort(JSON.stringify(this.queryString.sort).split(',').join(' '))
+    }else {
+      this.query = this.query.sort('-createdAt')
     }
-    return this;
+    return this
   }
 
-  queryProjection() {
-    if (this.queryObj.fields) {
-      const fields = JSON.stringify(this.queryObj.fields).split(',').join(' ');
-      this.query = this.query.select(fields);
-    } else {
-      this.query = this.query.select('-__v');
+  limitFields() {
+    // console.log('fields')
+    if(this.queryString.fields) {
+     const temp = this.queryString.fields.split(',').join(' ')
+      this.query = this.query.select(temp)
     }
-    return this;
+    else {
+      this.query = this.query.select('-__v')
+    }
+    return this
   }
-
-  pagination() {
-    const { page, limit } = this.queryObj;
-    const skip = (page - 1) * limit;
-    this.query = this.query.skip(skip).limit(parseInt(limit));
-    return this;
-  }
+  // pagination() {
+  //   console.log(this.queryString)
+  //   const {page, limit}  = req.queryString
+  //   const skip = (page - 1) * limit
+  //   console.log(skip)
+  //   this.query= this.query.skip(skip).limit(limit * 1)
+  //   console.log(this.query)
+  //   return this
+  // }
 }
-
 exports.createTour = async (req, res) => {
   const { name, rating, price } = req.body;
-  console.log(name, rating, price);
+  // console.log(name, rating, price);
 
   // 1.
   // const newTour = new Tour({
@@ -128,12 +130,16 @@ exports.getAllTours = async (req, res) => {
     // }
     // query = query.skip(skip).limit(limit * 1);
 
-    const features = new APIFeatures(Tour.find(), req.query);
+    // console.log(req.query)
+    // console.log(req.query)
+    const features = new APIFeatures(Tour.find(), req.query).filter().sort().limitFields()
+    // console.log(features.query)
+    // console.log('hello world')
     const tour = await features.query;
     res.status(200).json({
       statusCode: 'success',
       length: tour.length,
-      tour,
+      data: {tour},
     });
   } catch (err) {
     // console.log(err);
@@ -181,6 +187,23 @@ exports.updateTour = async (req, res) => {
   }
 };
 
+exports.deleteAllTours = async(req,res) => {  
+  try {
+    const res = await Tour.deleteMany({});
+    res.status(201).json({
+      status: 'success', 
+      data: {
+        tour: res
+      }
+
+  })
+} catch(err) {
+  res.status(400).json({
+    status: 'fail', 
+    msg: err
+  })
+}
+}
 exports.deleteTour = async (req, res) => {
   try {
     const tour = await Tour.findByIdAndDelete(req.params.id);
@@ -195,3 +218,28 @@ exports.deleteTour = async (req, res) => {
     });
   }
 };
+
+exports.getTourStats = async (req,res) => {
+  try{
+     const stats = await Tour.aggregate([
+       {
+         $match: {ratingsAverage: {$gte: 4.5}}
+       },
+       {
+         $group: {_id: '$difficulty', numTours: {$sum: 1} ,numRatings: {$sum: '$ratingsQuantity'}, avgRating: {$avg: '$ratingsAverage', }, avgPrice: {$avg: '$price'}, minPrice: {$min: '$price'}, maxPrice: {$max: '$price'}}
+       }
+     ])
+     res.status(200).json({
+       status: 'success', 
+       data: {
+         tour: stats
+       }
+     })
+
+  } catch(err) {
+    res.status(400).json({
+      status: 'fail', 
+      msg:err
+    })
+  }
+}

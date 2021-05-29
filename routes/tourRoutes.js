@@ -6,10 +6,12 @@ const router = express.Router();
 router
   .route('/top-5-tours')
   .get(tourController.aliasTopTours, tourController.getAllTours);
+router.route('/tour-stats').get(tourController.getTourStats)
 router
   .route('/')
   .get(tourController.getAllTours)
-  .post(tourController.createTour);
+  .post(tourController.createTour)
+  .delete(tourController.deleteAllTours);
 
 router
   .route('/:id')
