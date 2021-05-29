@@ -1,6 +1,6 @@
 const express = require('express');
 const morgan = require('morgan');
-
+const errorHandler = require('./controllers/errorController')
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
 
@@ -25,5 +25,6 @@ const port = 4000;
 
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
+app.use(errorHandler)
 
 module.exports = app;
