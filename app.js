@@ -4,6 +4,8 @@ const errorHandler = require('./controllers/errorController')
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
 
+const AppError = require('./utils/appError')
+
 const app = express();
 
 //serving static files
