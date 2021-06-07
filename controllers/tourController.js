@@ -39,7 +39,7 @@ exports.getTour = catchError(async function(req,res,next) {
   if(!tour) {
     return next(new AppError(404, 'No tour with that Id was found'))
   }
-  res.status(200).json({
+  res.status(204).json({
     statusCode: 'success',
     data: {
       tour,
@@ -75,7 +75,8 @@ exports.deleteAllTours = catchError(async (req, res, next) => {
       },
     });
 });
-exports.deleteTour = catchError(async (req, res) => {
+exports.deleteTour = catchError(async (req, res, next) => {
+  console.log('delete tour')
     const tour = await Tour.findByIdAndDelete(req.params.id);
     if(!tour) {
       return next(new AppError(404, "No tour with that id was found"))
@@ -87,7 +88,7 @@ exports.deleteTour = catchError(async (req, res) => {
 
 });
 
-exports.getTourStats = catchError(async (req, res) => {
+exports.getTourStats = catchError(async (req, res, next) => {
     const stats = await Tour.aggregate([
       {
         $match: { ratingsAverage: { $gte: 4.5 } },
