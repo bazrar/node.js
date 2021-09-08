@@ -15,10 +15,17 @@ exports.getOverview = catchError(async (req,res) => {
     });
 });
 
-exports.getTour = (req,res) => {
-    res.status(200).render('tour', {
-      title: 'The Forest Hiker Tour'
-    });
+exports.getTour = async (req,res) => {
+    //1 get the tour
+    try {
+        const tour = await Tour.findOne({slug:req.params.slug}); 
+        res.status(200).render('tour', {
+            title: 'The Forest Hiker Tour', 
+            tour
+          });
+    }catch(err) {
+        console.log(err);
+    }
 };
 
 exports.getLoginForm = (req,res) => {
