@@ -76,7 +76,6 @@ exports.deleteAllTours = catchError(async (req, res, next) => {
     });
 });
 exports.deleteTour = catchError(async (req, res, next) => {
-  console.log('delete tour')
     const tour = await Tour.findByIdAndDelete(req.params.id);
     if(!tour) {
       return next(new AppError(404, "No tour with that id was found"))
