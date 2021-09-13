@@ -35,11 +35,14 @@ exports.getAllTours = catchError(async (req, res, next) => {
 });
 
 exports.getTour = catchError(async function(req,res,next) { 
-  const tour = await Tour.findById(req.params.id);
+  const tour = await Tour.findById(req.params.id).populate({
+    path: 'guides', 
+    select: '-__v'
+  });
   if(!tour) {
     return next(new AppError(404, 'No tour with that Id was found'))
   }
-  res.status(204).json({
+  res.status(200).json({
     statusCode: 'success',
     data: {
       tour,

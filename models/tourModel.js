@@ -116,6 +116,14 @@ tourSchema.pre('save', function(next) {
 //   next(); 
 // });
 
+tourSchema.pre('find', function(next) {
+  this.populate({
+    path: 'guides', 
+    select: '-__v'
+  }); 
+  next();
+});
+
 tourSchema.pre('remove', { query: true, document: false }, function(next) {
   console.log('removing all docs...')
   next()
