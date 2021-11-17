@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
-const slugify = require('slugify')
+const slugify = require('slugify');
+
+// const user = require('./userModel'); 
 
 const tourSchema = new mongoose.Schema({
   name: {
@@ -70,14 +72,57 @@ const tourSchema = new mongoose.Schema({
     default: Date.now(),
     select: false,
   },
+ startLocation: {
+   // GeoJSON
+   type: {
+     type: 'String', 
+     default: 'Point', 
+     enum: ['Point'],
+   }, 
+   coordinates: [Number], 
+   address: String, 
+   description: String
+ }, 
+  locations: [
+    {
+      type: {
+        type: String, 
+        default: 'Point', 
+        enum: 'Point'
+      }, 
+      coordinates: [Number], 
+      address: String, 
+      description: String, 
+      day: Number
+    }
+  ], 
+  guides: [
+    {
+      type: mongoose.Schema.ObjectId, 
+      ref: 'User'
+    }
+  ], 
   startDates: [Date],
 });
 //DOCUMENT MIDDLEWARES: runs before the .save() command and .create() command
 tourSchema.pre('save', function(next) {
   this.slug = slugify(this.name, {lower: true})
   next()
+}); 
 
-})
+// tourSchema.pre('save', async function(next) {
+//   const guidesPromise = this.guides.map(async id => await user.findById(id)); 
+//   this.guides = await Promise.all(guidesPromise); 
+//   next(); 
+// });
+
+tourSchema.pre('find', function(next) {
+  this.populate({
+    path: 'guides', 
+    select: '-__v'
+  }); 
+  next();
+});
 
 tourSchema.pre('remove', { query: true, document: false }, function(next) {
   console.log('removing all docs...')
